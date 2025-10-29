@@ -1,0 +1,34 @@
+# Core Python & Data Libraries
+pandas==2.2.2
+numpy==1.26.4
+requests==2.31.0
+tqdm==4.66.4
+
+# Machine Learning & NLP
+torch==2.2.0
+transformers==4.40.2
+textblob==0.17.1
+
+# Database & Cloud Integration
+snowflake-connector-python==3.11.0
+snowflake-sqlalchemy==1.5.2
+sqlalchemy==2.0.29
+
+# dbt & CLI Tools
+dbt-core==1.8.1
+dbt-snowflake==1.8.1
+
+# Message Queue & Storage (if included in architecture)
+pika==1.3.2          # RabbitMQ client
+google-cloud-storage==2.17.0
+
+# Utilities & Logging
+python-dotenv==1.0.1
+loguru==0.7.2
+
+# Visualization / Dashboard (optional)
+matplotlib==3.8.4
+plotly==5.22.0
+
+# Jupyter (optional for testing)
+ipykernel==6.29.4
