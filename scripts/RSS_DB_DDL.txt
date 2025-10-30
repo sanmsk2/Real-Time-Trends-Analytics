@@ -1,0 +1,239 @@
+create or replace database RSS_DB;
+
+create or replace warehouse RSS_WH;
+
+create or replace schema PUBLIC;
+
+create or replace schema RSS_SCH;
+
+create or replace TRANSIENT TABLE DIM_RSS_DATE (
+	DATE_KEY NUMBER(38,0),
+	FULL_DATE DATE,
+	YEAR NUMBER(4,0),
+	MONTH NUMBER(2,0),
+	DAY NUMBER(2,0),
+	QUARTER NUMBER(2,0),
+	DAY_OF_WEEK NUMBER(2,0),
+	IS_WEEKEND BOOLEAN
+);
+create or replace TRANSIENT TABLE DIM_RSS_SOURCE (
+	SOURCE_ID VARCHAR(32),
+	SOURCE_NAME VARCHAR(16777216),
+	DOMAIN VARCHAR(16777216),
+	FEED_URL VARCHAR(16777216),
+	FIRST_SEEN TIMESTAMP_TZ(9),
+	LAST_SEEN TIMESTAMP_TZ(9),
+	ACTIVE_FLAG BOOLEAN,
+	LOAD_TIMESTAMP TIMESTAMP_LTZ(9)
+);
+create or replace TRANSIENT TABLE FACT_RSS_ENRICHED (
+	EVENT_ID VARCHAR(32),
+	TITLE VARCHAR(16777216),
+	SUMMARY VARCHAR(16777216),
+	SOURCE_ID VARCHAR(32),
+	DATE_KEY NUMBER(38,0),
+	PUBLISHED_AT TIMESTAMP_TZ(9),
+	LOAD_TIMESTAMP TIMESTAMP_LTZ(9),
+	TITLE_WORD_COUNT NUMBER(9,0),
+	SUMMARY_WORD_COUNT NUMBER(9,0),
+	ENGAGEMENT_SCORE NUMBER(16,6),
+	PUBLISHED_HOUR NUMBER(2,0)
+);
+create or replace TRANSIENT TABLE FACT_RSS_EVENTS (
+	EVENT_ID VARCHAR(32),
+	SOURCE_ID VARCHAR(32),
+	DATE_KEY NUMBER(38,0),
+	LINK VARCHAR(16777216),
+	TITLE VARCHAR(16777216),
+	SUMMARY VARCHAR(16777216),
+	PUBLISHED_AT TIMESTAMP_TZ(9),
+	LOAD_TIMESTAMP TIMESTAMP_LTZ(9),
+	TITLE_WORD_COUNT NUMBER(19,0),
+	SUMMARY_WORD_COUNT NUMBER(19,0)
+);
+create or replace TABLE FACT_RSS_PREDICTIONS (
+	EVENT_ID VARCHAR(32),
+	TITLE VARCHAR(16777216),
+	SUMMARY VARCHAR(16777216),
+	SOURCE_ID VARCHAR(32),
+	PUBLISHED_AT TIMESTAMP_TZ(9),
+	PREDICTED_LABEL NUMBER(38,0),
+	PREDICTED_SENTIMENT VARCHAR(16777216),
+	CONFIDENCE FLOAT
+);
+create or replace TABLE FACT_RSS_SENTIMENT (
+	EVENT_ID VARCHAR(16777216),
+	TITLE VARCHAR(16777216),
+	SUMMARY VARCHAR(16777216),
+	SOURCE_ID VARCHAR(16777216),
+	DATE_KEY NUMBER(38,0),
+	PUBLISHED_AT TIMESTAMP_NTZ(9),
+	LOAD_TIMESTAMP NUMBER(38,0),
+	TITLE_WORD_COUNT NUMBER(38,0),
+	SUMMARY_WORD_COUNT NUMBER(38,0),
+	ENGAGEMENT_SCORE FLOAT,
+	PUBLISHED_HOUR NUMBER(38,0),
+	"title_sentiment_score" FLOAT,
+	"summary_sentiment_score" FLOAT,
+	"title_sentiment_label" VARCHAR(16777216),
+	"summary_sentiment_label" VARCHAR(16777216)
+);
+create or replace TRANSIENT TABLE FACT_SENTIMENT_OVERALL (
+	DATE DATE,
+	SOURCE_ID VARCHAR(16777216),
+	POSITIVE_COUNT NUMBER(13,0),
+	NEUTRAL_COUNT NUMBER(13,0),
+	NEGATIVE_COUNT NUMBER(13,0),
+	TOTAL_COUNT NUMBER(18,0),
+	POSITIVE_PCT NUMBER(23,2),
+	NEUTRAL_PCT NUMBER(23,2),
+	NEGATIVE_PCT NUMBER(23,2),
+	DATE_SOURCE VARCHAR(16777216)
+);
+create or replace TRANSIENT TABLE FACT_SENTIMENT_TRENDS (
+	DATE DATE,
+	POSITIVE_COUNT NUMBER(30,0),
+	NEUTRAL_COUNT NUMBER(30,0),
+	NEGATIVE_COUNT NUMBER(30,0),
+	TOTAL_COUNT NUMBER(30,0),
+	POSITIVE_PCT NUMBER(38,2),
+	NEUTRAL_PCT NUMBER(38,2),
+	NEGATIVE_PCT NUMBER(38,2)
+);
+create or replace TRANSIENT TABLE FACT_SOURCE_SENTIMENT (
+	DATE DATE,
+	SOURCE_ID VARCHAR(16777216),
+	POSITIVE_COUNT NUMBER(30,0),
+	NEUTRAL_COUNT NUMBER(30,0),
+	NEGATIVE_COUNT NUMBER(30,0),
+	TOTAL_COUNT NUMBER(30,0),
+	POSITIVE_PCT NUMBER(38,2),
+	NEUTRAL_PCT NUMBER(38,2),
+	NEGATIVE_PCT NUMBER(38,2),
+	DATE_SOURCE VARCHAR(16777216)
+);
+create or replace TRANSIENT TABLE RSS_BASE (
+	ID VARCHAR(16777216),
+	LINK VARCHAR(16777216),
+	PUBLISHED_AT TIMESTAMP_TZ(9),
+	SOURCE VARCHAR(16777216),
+	SUMMARY_HTML VARCHAR(16777216),
+	TITLE VARCHAR(16777216),
+	LOAD_TIMESTAMP TIMESTAMP_LTZ(9)
+);
+create or replace TRANSIENT TABLE RSS_CLEAN (
+	ID VARCHAR(16777216),
+	CLEAN_ID VARCHAR(32),
+	LINK VARCHAR(16777216),
+	PUBLISHED_AT TIMESTAMP_TZ(9),
+	SOURCE VARCHAR(16777216),
+	SUMMARY VARCHAR(16777216),
+	TITLE VARCHAR(16777216),
+	LOAD_TIMESTAMP TIMESTAMP_LTZ(9)
+);
+create or replace TABLE RSS_STAGING (
+	ID VARCHAR(16777216),
+	RSS_ENTRY VARIANT,
+	LOAD_TIMESTAMP TIMESTAMP_LTZ(9) DEFAULT CURRENT_TIMESTAMP()
+);
+create or replace view FACT_SOURCE_SENTIMENT_AGG_VW(
+	DATE,
+	SOURCE_NAME,
+	POSITIVE_COUNT,
+	NEUTRAL_COUNT,
+	NEGATIVE_COUNT,
+	TOTAL_COUNT,
+	POSITIVE_PCT,
+	NEUTRAL_PCT,
+	NEGATIVE_PCT
+) as (
+    -- models/fact_source_sentiment_agg_vw.sql
+
+with base as (
+    select
+        date,
+        source_name,
+        positive_count,
+        neutral_count,
+        negative_count,
+        total_count
+    from RSS_DB.RSS_SCH.fact_source_sentiment_vw
+)
+
+select
+    date,
+    source_name,
+    sum(positive_count) as positive_count,
+    sum(neutral_count) as neutral_count,
+    sum(negative_count) as negative_count,
+    sum(total_count) as total_count,
+    -- Percentages
+    case when sum(total_count) > 0 then round(sum(positive_count) * 100.0 / sum(total_count), 2) else 0 end as positive_pct,
+    case when sum(total_count) > 0 then round(sum(neutral_count) * 100.0 / sum(total_count), 2) else 0 end as neutral_pct,
+    case when sum(total_count) > 0 then round(sum(negative_count) * 100.0 / sum(total_count), 2) else 0 end as negative_pct
+from base
+group by date, source_name
+order by date desc, source_name
+  );
+create or replace view FACT_SOURCE_SENTIMENT_VW(
+	DATE,
+	SOURCE_ID,
+	SOURCE_NAME,
+	POSITIVE_COUNT,
+	NEUTRAL_COUNT,
+	NEGATIVE_COUNT,
+	TOTAL_COUNT,
+	POSITIVE_PCT,
+	NEUTRAL_PCT,
+	NEGATIVE_PCT
+) as (
+    -- models/fact_source_sentiment_vw.sql
+
+with sentiment_data as (
+
+    select
+        date,
+        source_id,
+        positive_count,
+        neutral_count,
+        negative_count,
+        total_count,
+        positive_pct,
+        neutral_pct,
+        negative_pct
+    from RSS_DB.rss_sch.fact_source_sentiment
+
+),
+
+source_mapping as (
+
+    select
+        source_id,
+        source_name
+    from RSS_DB.RSS_SCH.dim_rss_source
+
+)
+
+select
+    s.date,
+    s.source_id,
+    m.source_name,
+    s.positive_count,
+    s.neutral_count,
+    s.negative_count,
+    s.total_count,
+    s.positive_pct,
+    s.neutral_pct,
+    s.negative_pct
+from sentiment_data s
+left join source_mapping m
+    on s.source_id = m.source_id
+order by s.date desc, m.source_name
+  );
+create or replace pipe RSS_PIPE auto_ingest=true integration='RSS_GCS_NOTIFY_INTEGRATION' as COPY INTO rss_db.rss_sch.rss_staging (id, rss_entry)
+  FROM (
+    SELECT $1:msg_id::STRING, $1:rss_entry
+    FROM @rss_db.rss_sch.rss_stage
+  )
+  FILE_FORMAT = (TYPE = JSON STRIP_OUTER_ARRAY = TRUE);
+create or replace schema RSS_SCH_RSS_SCH;
