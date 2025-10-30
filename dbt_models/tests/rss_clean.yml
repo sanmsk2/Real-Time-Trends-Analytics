@@ -1,0 +1,32 @@
+version: 2
+
+models:
+  - name: rss_clean
+    description: "Cleaned and deduplicated RSS feed articles"
+    columns:
+      - name: id
+        description: "Original ID from Snowpipe / rss_staging"
+      - name: clean_id
+        description: "Unique surrogate key generated from link"
+        tests:
+          - unique
+          - not_null
+      - name: link
+        description: "Article URL"
+        tests:
+          - unique
+          - not_null
+      - name: published_at
+        description: "Original published timestamp of article"
+        tests:
+          - not_null
+      - name: source
+        description: "Source of the article (Medium, Google AI, etc.)"
+      - name: summary
+        description: "Article summary with HTML stripped"
+      - name: title
+        description: "Article title"
+        tests:
+          - not_null
+      - name: load_timestamp
+        description: "Snowpipe ingestion timestamp"
