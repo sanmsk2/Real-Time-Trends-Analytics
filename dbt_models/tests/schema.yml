@@ -1,0 +1,130 @@
+version: 2
+
+models:
+
+  - name: dim_rss_source
+    description: "Dimension table containing unique RSS sources and metadata."
+    columns:
+      - name: source_id
+        description: "Surrogate key for the RSS source."
+        tests:
+          - unique
+          - not_null
+      - name: source_name
+        description: "The name of the RSS source."
+        tests:
+          - not_null
+      - name: domain
+        description: "Domain extracted from source URL."
+      - name: feed_url
+        description: "Original feed URL."
+      - name: first_seen
+        description: "Timestamp of the first article seen from this source."
+      - name: last_seen
+        description: "Timestamp of the most recent article from this source."
+      - name: active_flag
+        description: "Indicates if the source is currently active."
+
+  - name: dim_rss_date
+    description: "Standard date/calendar dimension for reporting."
+    columns:
+      - name: date_key
+        description: "Integer key in YYYYMMDD format."
+        tests:
+          - unique
+          - not_null
+      - name: full_date
+        description: "Actual date."
+        tests:
+          - not_null
+      - name: year
+        description: "Year of the date."
+      - name: month
+        description: "Month of the date."
+      - name: day
+        description: "Day of the month."
+      - name: quarter
+        description: "Quarter of the year."
+      - name: day_of_week
+        description: "Day of the week (1=Sunday)."
+      - name: is_weekend
+        description: "Boolean indicating if the day is Saturday or Sunday."
+
+  - name: fact_rss_events
+    description: "Fact table containing all RSS events linked to dimensions."
+    columns:
+      - name: event_id
+        description: "Surrogate key for the RSS event."
+        tests:
+          - unique
+          - not_null
+      - name: source_id
+        description: "Foreign key linking to dim_rss_source."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_rss_source')
+              field: source_id
+      - name: date_key
+        description: "Foreign key linking to dim_rss_date."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_rss_date')
+              field: date_key
+      - name: link
+        description: "URL of the article."
+      - name: title
+        description: "Title of the article."
+      - name: summary
+        description: "Summary of the article."
+      - name: published_at
+        description: "Timestamp when the article was published."
+        tests:
+          - not_null
+      - name: load_timestamp
+        description: "Timestamp when the event was loaded into the fact table."
+        tests:
+          - not_null
+      - name: title_word_count
+        description: "Number of words in the article title."
+      - name: summary_word_count
+        description: "Number of words in the article summary."
+  
+  - name: fact_sentiment_trends
+    description: "Daily aggregated sentiment trends from RSS feeds"
+    columns:
+      - name: date
+        description: "The date for which sentiment is aggregated"
+        tests:
+          - not_null
+          - unique
+      - name: total_count
+        description: "Total number of articles aggregated for the day"
+        tests:
+          - not_null
+      - name: positive_count
+        description: "Count of positive articles"
+        tests:
+          - not_null
+      - name: neutral_count
+        description: "Count of neutral articles"
+        tests:
+          - not_null
+      - name: negative_count
+        description: "Count of negative articles"
+        tests:
+          - not_null
+
+  - name: fact_sentiment_overall
+    description: "Daily overall sentiment by combining title and summary sentiment"
+    columns:
+      - name: date
+        tests:
+          - not_null
+      - name: source_id
+        tests:
+          - not_null
+      - name: total_count
+        tests:
+          - not_null
