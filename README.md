@@ -1,32 +1,17 @@
 # RSS Sentiment Analysis – Real-Time AI Feed Analytics
-Overview
 
-This project demonstrates an end-to-end, real-time data engineering and machine learning pipeline that collects, processes, and analyzes RSS feed data related to Artificial Intelligence (AI) and emerging technology topics.
-It combines data ingestion, transformation, machine learning, and visualization into a unified, production style architecture using modern data tools such as RabbitMQ, GCP Cloud Storage, Snowflake, dbt, and Hugging Face Transformers.
+This project demonstrates an end-to-end, real-time data engineering and machine learning pipeline designed to collect, process, and analyze RSS feed data related to Artificial Intelligence (AI) and emerging technology topics. The goal of this initiative is to create a fully automated, production-style architecture that combines modern data tools such as RabbitMQ, GCP Cloud Storage, Snowflake, dbt, and Hugging Face Transformers to deliver real-time insights into AI media sentiment and topic trends.
 
-Project Goals
+The pipeline begins with the ingestion of RSS feeds from sources such as Medium, OpenAI, and Google AI, which are queued through RabbitMQ for fault-tolerant and asynchronous processing. These feeds are staged in Google Cloud Storage as JSON files before being automatically loaded into Snowflake through Snowpipe. Within Snowflake, dbt transformations are used to clean, standardize, and enrich the data by parsing timestamps, flattening nested structures, and applying incremental model logic. Data quality is ensured through dbt’s built-in tests for uniqueness, null values, and referential integrity.
 
-- Collect and process AI-related articles from sources like Medium, OpenAI, and Google AI.
-- Perform sentiment analysis on article titles and summaries.
-- Deliver real-time dashboards for AI media sentiment and topic visibility.
-- Showcase data engineering + machine learning + BI integration in one architecture.
+Once the data is transformed and analytics-ready, machine learning models are applied using the Hugging Face Transformers framework with the DistilBERT model for sentiment classification. These models analyze article titles and summaries to determine whether the sentiment is positive, neutral, or negative. The results, along with confidence scores, are written back into Snowflake for downstream reporting and visualization. The final enriched tables power interactive dashboards in Looker Studio, providing near real-time visibility into AI sentiment trends, topic dynamics, and source-level insights.
 
-Architecture Overview
-End-to-End Data Flow:
+The project’s architecture integrates several cloud-native and open-source components that enable scalability, reliability, and modularity. RabbitMQ provides a decoupled ingestion layer, Snowpipe supports continuous and automated data loading, dbt ensures maintainable transformations, and Python enables both ETL and ML enrichment. The entire architecture is designed to be extensible and can easily support new data sources, transformations, or machine learning enhancements in future iterations.
 
-RSS Feeds → RabbitMQ → GCP Cloud Storage → Snowflake (Snowpipe)
-           → dbt Transformations → Python (DistilBERT)
-           → Snowflake (Predictions) → Looker Studio Dashboard
+The repository includes well-organized folders for configuration, transformation, machine learning, documentation, and visualization assets. The configs directory contains dbt configuration files, while dbt_models holds SQL models for staging and marts layers. The scripts folder includes Python files such as rss_sentiment.py for basic sentiment analysis using TextBlob, rss_ml.py for advanced DistilBERT-based classification with Snowflake integration. Documentation assets, including the architecture diagram and project report, are stored in the docs folder, and the dashboard folder contains Looker Studio previews and screenshots.
 
-Architecture Highlights:
-- Decoupled ingestion using RabbitMQ for fault tolerance.
-- Snowpipe for continuous, auto-ingested data loading.
-- dbt for incremental transformations and quality checks.
-- Python (Transformers) for ML-based sentiment classification.
-- Looker Studio for near-real-time insights and visualization.
-See architecture diagram in /docs/RSS_Sentiment_Architecture.png.
+The pipeline demonstrates key technical capabilities across the modern data ecosystem, including automated ingestion, transformation orchestration, cloud data warehousing, machine learning integration, and visualization. It highlights how data engineering and machine learning can work together to extract meaningful insights from unstructured, real-world data. From a business perspective, this solution provides valuable visibility into how AI-related topics evolve over time and how public sentiment fluctuates across media sources.
 
-Results & Key Outcomes
-- Delivered a production-style pipeline from ingestion to ML to visualization.
-- Achieved real-time AI sentiment insights from live RSS feeds.
-- Demonstrated seamless integration across data engineering, ML, and BI layers.
+Future enhancements include implementing topic modeling with BERTopic or LDA to identify emerging AI subthemes, introducing anomaly detection to monitor spikes or drops in sentiment, enabling near real-time updates using Snowflake Streams and Tasks, and deploying the workflow using Airflow or GCP Composer for enterprise-scale orchestration. Additionally, advanced visualization layers can be developed to track keyword-level sentiment and temporal shifts more interactively.
+
+In summary, this project delivers a robust example of how modern data pipelines can combine ingestion, transformation, machine learning, and visualization into a unified architecture. It demonstrates proficiency in real-time data engineering, warehouse modeling using Snowflake and dbt, ML-based sentiment analysis with Hugging Face Transformers, and visual storytelling through Looker Studio. The result is a scalable, extensible framework that can serve as a strong foundation for future predictive analytics and trend monitoring in the AI domain.
